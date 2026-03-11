@@ -189,7 +189,7 @@ variable "storage_account_network_rules" {
     default_action             = optional(string, "Deny")
     ip_rules                   = optional(list(string), [])
     virtual_network_subnet_ids = optional(list(string), [])
-    private_link_access = optional(map(object({
+    private_link_accesses = optional(map(object({
       endpoint_resource_id = string
       endpoint_tenant_id   = optional(string, null)
     })), null)

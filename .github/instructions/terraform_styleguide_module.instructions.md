@@ -32,6 +32,16 @@ resource "azurerm_kubernetes_cluster_node_pool" "this" {
 }
 ```
 
+- Variables and object attributes iterated with `for_each` (i.e. typed as `map(object({...}))`) **must** use a **plural** name. Single-object optional blocks toggled with `[var.x] : []` remain singular.
+
+```hcl
+# ✅ plural — iterated with for_each (fan-out map)
+variable "kubernetes_cluster_node_pools" { ... }         # map(object)
+
+# ✅ singular — single optional block, toggled with [var.x] : []
+variable "storage_account_blob_properties" { ... }       # object
+```
+
 - Use `count` for single resource creation (typically toggled by a `_create` boolean flag):
 
 ```hcl
@@ -83,6 +93,8 @@ key_vault_certificate_key_vault_ids
 
 Module-level location/region: use `module_location` (azurerm modules) or `location`.
 Module-level tags: use `module_tags` or `tags`. Per-resource tags: `<resource_type>_tags`.
+
+Both `module_location` and `module_tags` (and any other cross-resource globals) **must** be declared in `variables_globals.tf`, not in a resource-specific file.
 
 ### 3.2 Variable types
 
@@ -253,13 +265,67 @@ output "kubernetes_cluster_kube_config" {
 }
 ```
 
+### 4.3 Sensitive outputs
+
+Mark an output `sensitive = true` whenever it exposes a value that must not appear in plain-text logs or state diffs. Common examples:
+
+| Attribute | Sensitive |
+|-----------|-----------|
+| `primary_access_key`, `secondary_access_key` | ✅ |
+| `primary_connection_string`, `secondary_connection_string` | ✅ |
+| `primary_blob_connection_string`, `secondary_blob_connection_string` | ✅ |
+| `kube_config_raw` | ✅ |
+| `administrator_password` | ✅ |
+| Full `_properties` object that wraps any of the above | ✅ |
+| IDs, endpoints, locations | ❌ |
+
+### 4.4 Null-guarding for count-based resources
+
+When a resource is controlled by a `_create` boolean flag (i.e. created with `count`), every output **must** guard against the resource not existing:
+
+```hcl
+# ✅ count-based — guard with ternary
+output "storage_account_properties_primary_location" {
+  description = "The primary location of the Storage Account. Returns null when storage_account_create is false."
+  value       = var.storage_account_create ? azurerm_storage_account.this[0].primary_location : null
+}
+
+output "storage_account_properties_primary_access_key" {
+  description = "The primary access key of the Storage Account. Returns null when storage_account_create is false."
+  sensitive   = true
+  value       = var.storage_account_create ? azurerm_storage_account.this[0].primary_access_key : null
+}
+```
+
+For `for_each`-based resources, the value is already a map and no guard is needed (an empty map is returned when `for_each` receives an empty input):
+
+```hcl
+# ✅ for_each-based — no guard needed
+output "key_vault_key_ids" {
+  description = "Map of Key Vault Key IDs, keyed by the input map key."
+  value       = { for k, v in azurerm_key_vault_key.this : k => v.id }
+}
+```
+
+### 4.5 Output coverage
+
+Every resource type managed by the module **must** expose at minimum:
+
+1. **ID output** — `<resource_type>_id` (count) or `<resource_type>_ids` (for_each).
+2. **Full properties output** — `<resource_type>_properties` exposing the entire resource object. Mark `sensitive = true` if the resource exposes any secret attributes.
+3. **Sub-property outputs** — a dedicated `<resource_type>_properties_<sub_attr>` output for every commonly consumed nested attribute (e.g. endpoints, locations, access keys, connection strings, identity blocks, network interface details).
+
+> Use `mcp_terraform_pub_get_provider_details` to retrieve the full list of exported attributes for a resource type before writing or reviewing outputs.
+
 ---
 
 ## 5. Provider conventions
 
 ### 5.1 Required providers
 
-Pin providers to an exact version in `versions.tf` (or `terraform.tf`):
+Pin providers in `versions.tf` (or `terraform.tf`) using the **pessimistic constraint operator** (`~>`) against the current **major version** (e.g. `~> 4.0`). This allows all minor and patch upgrades within the major version. Never use pre-release (alpha/beta/rc) versions.
+
+> Use `mcp_terraform_pub_get_latest_provider_version` to determine the current major version before writing or updating a `versions.tf`.
 
 ```hcl
 terraform {
@@ -272,7 +338,7 @@ terraform {
     }
     fabric = {
       source  = "microsoft/fabric"
-      version = "0.1.0-beta.7"
+      version = "~> 1.0"
     }
     random = {
       source  = "hashicorp/random"
@@ -298,6 +364,7 @@ Each workspace / configuration follows this file structure:
 ├── main.tf                              # module calls only — no raw resources
 ├── locals.tf                            # exactly one locals block (optional)
 ├── data.tf                              # all data sources (optional)
+├── variables_globals.tf                 # module_location, module_tags, and other cross-resource variables
 ├── variables_<resource_type>.tf         # one file per resource type, e.g.:
 │   ├── variables_kubernetes_cluster.tf
 │   ├── variables_resource_group.tf

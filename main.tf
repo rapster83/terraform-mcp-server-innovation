@@ -145,7 +145,7 @@ resource "azurerm_storage_account" "this" {
       virtual_network_subnet_ids = network_rules.value.virtual_network_subnet_ids
 
       dynamic "private_link_access" {
-        for_each = network_rules.value.private_link_access != null ? network_rules.value.private_link_access : {}
+        for_each = network_rules.value.private_link_accesses != null ? network_rules.value.private_link_accesses : {}
         content {
           endpoint_resource_id = private_link_access.value.endpoint_resource_id
           endpoint_tenant_id   = private_link_access.value.endpoint_tenant_id
@@ -325,7 +325,7 @@ resource "azurerm_private_endpoint" "this" {
   }
 
   dynamic "ip_configuration" {
-    for_each = each.value.ip_configuration != null ? each.value.ip_configuration : {}
+    for_each = each.value.ip_configurations != null ? each.value.ip_configurations : {}
     content {
       name               = ip_configuration.value.name
       private_ip_address = ip_configuration.value.private_ip_address

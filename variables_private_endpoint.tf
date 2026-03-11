@@ -20,7 +20,7 @@ variable "private_endpoints" {
       private_dns_zone_ids = list(string)
     }), null)
 
-    ip_configuration = optional(map(object({
+    ip_configurations = optional(map(object({
       name               = string
       private_ip_address = string
       subresource_name   = optional(string, null)

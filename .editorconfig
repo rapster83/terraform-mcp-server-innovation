@@ -1,0 +1,41 @@
+# EditorConfig — https://editorconfig.org
+# Terraform modules: canonical whitespace rules aligned with `terraform fmt`.
+# Do NOT change indent_size or end_of_line for [*.tf] — these must match
+# what `terraform fmt` enforces.
+
+root = true
+
+# ── Defaults (all files) ────────────────────────────────────────────────────
+[*]
+charset                  = utf-8
+end_of_line              = lf
+indent_style             = space
+indent_size              = 2
+trim_trailing_whitespace = true
+insert_final_newline     = true
+
+# ── HCL / Terraform ─────────────────────────────────────────────────────────
+# terraform fmt uses 2-space soft indentation and LF line endings.
+[*.{tf,tfvars,hcl}]
+indent_style = space
+indent_size  = 2
+end_of_line  = lf
+
+# ── Markdown ─────────────────────────────────────────────────────────────────
+# Trailing whitespace is meaningful in Markdown (two spaces = <br>).
+# Turn off trim_trailing_whitespace to preserve intentional line breaks.
+[*.{md,mdx}]
+trim_trailing_whitespace = false
+
+# ── JSON / YAML ──────────────────────────────────────────────────────────────
+[*.{json,yaml,yml}]
+indent_style = space
+indent_size  = 2
+
+# ── Shell scripts ────────────────────────────────────────────────────────────
+[*.sh]
+end_of_line = lf
+
+# ── Windows batch / PowerShell ───────────────────────────────────────────────
+[*.{bat,cmd,ps1}]
+end_of_line = crlf

@@ -1,0 +1,50 @@
+# ============================================================
+# Terraform — local state (".terraform" provider cache)
+# ============================================================
+.terraform/
+.terraform.lock.hcl
+
+# ============================================================
+# Terraform — state files
+# ============================================================
+*.tfstate
+*.tfstate.*
+
+# ============================================================
+# Terraform — crash & diagnostic logs
+# ============================================================
+crash.log
+crash.*.log
+
+# ============================================================
+# Terraform — variable files
+# Only default.auto.tfvars (used by examples) is committed.
+# All other .tfvars files are excluded to prevent accidental
+# exposure of secrets or environment-specific settings.
+# ============================================================
+*.tfvars
+*.tfvars.json
+
+# ============================================================
+# Terraform — local override files
+# Override files are developer-local only and must never be
+# shared as they silently change module behaviour.
+# ============================================================
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# ============================================================
+# Terraform — CLI and backend configuration
+# These files can contain tokens and backend credentials.
+# ============================================================
+.terraformrc
+terraform.rc
+*.tfbackend
+
+# ============================================================
+# Examples — lock files ARE committed for examples because
+# examples are root modules used for functional testing.
+# ============================================================
+!examples/**/.terraform.lock.hcl
